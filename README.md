@@ -29,8 +29,23 @@ branch sungjunyoung/homeco-2291-login     →  workspace "HOMECO-2291 홈코데�
 herdr plugin install sungjunyoung/herdr-linear-title
 ```
 
-Then, inside the herdr TUI, run the **Linear: setup / login** action. It opens
-a popup that asks for:
+Then open the setup popup. herdr has no menu for plugin actions, so run this
+from any pane inside herdr (or bind a key, see [Actions](#actions)):
+
+```sh
+herdr plugin action invoke sungjunyoung.linear-title.setup
+```
+
+The action opens the popup pane directly, which you can also do yourself:
+
+```sh
+herdr plugin pane open --plugin sungjunyoung.linear-title --entrypoint setup --focus
+```
+
+A herdr TUI client must be attached. Without one the command still answers
+`ok`, but no popup appears.
+
+The popup asks for:
 
 1. **Team keys**: the issue prefix of your Linear teams, e.g. `HOMECO` for
    `HOMECO-2290`. Comma separated for several teams.
@@ -72,7 +87,9 @@ access is enough) and choose "Personal API key" in setup.
 | `sungjunyoung.linear-title.setup` | Open the setup / login popup |
 | `sungjunyoung.linear-title.logout` | Revoke and delete the OAuth token |
 
-Bind them in `~/.config/herdr/config.toml`:
+herdr runs plugin actions only through keybindings or
+`herdr plugin action invoke <action>`. Bind them in
+`~/.config/herdr/config.toml`, then reload with `prefix+shift+r`:
 
 ```toml
 [[keys.command]]
