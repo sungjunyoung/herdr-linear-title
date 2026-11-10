@@ -2,16 +2,20 @@
 // workspaces to "<ISSUE-ID> <Linear issue title>".
 //
 // herdr runs it with a subcommand from herdr-plugin.toml and injects the
-// plugin environment (HERDR_BIN_PATH, HERDR_PLUGIN_CONFIG_DIR, ...).
+// plugin environment (HERDR_BIN_PATH, HERDR_PLUGIN_CONFIG_DIR, ...). The
+// Herdr desktop app's mod runs "resolve" without that environment, so the
+// config and state directories fall back to the ones herdr gives the plugin.
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/sungjunyoung/herdr-linear-title/internal/auth"
@@ -24,8 +28,9 @@ import (
 )
 
 const (
-	notifyTitle = "Linear Title"
-	usage       = "usage: herdr-linear-title hook|refresh|refresh-all|open-setup|setup|logout"
+	notifyTitle     = "Linear Title"
+	defaultPluginID = "sungjunyoung.linear-title"
+	usage           = "usage: herdr-linear-title hook|refresh|refresh-all|open-setup|setup|logout|resolve <branch>"
 )
 
 func main() {
@@ -39,12 +44,25 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
+	if len(args) == 2 && args[0] == "resolve" {
+		a, err := newApp(os.Stderr)
+		if err != nil {
+			return err
+		}
+		return a.resolve(ctx, os.Stdout, args[1])
+	}
 	if len(args) != 1 {
 		return errors.New(usage)
 	}
 	a, err := newApp(os.Stderr)
 	if err != nil {
 		return err
+	}
+	switch args[0] {
+	case "hook", "refresh", "refresh-all", "open-setup":
+		if a.herdr == nil {
+			return fmt.Errorf("%s must be run by herdr as a plugin action (HERDR_BIN_PATH is not set)", args[0])
+		}
 	}
 	switch args[0] {
 	case "hook":
@@ -66,6 +84,7 @@ func run(ctx context.Context, args []string) error {
 
 // app holds the plugin runtime environment injected by herdr.
 type app struct {
+	// herdr is nil outside herdr (the desktop app's mod, a shell).
 	herdr     *herdr.Client
 	pluginID  string
 	configDir string
@@ -74,21 +93,31 @@ type app struct {
 }
 
 func newApp(log io.Writer) (*app, error) {
-	vars := map[string]string{}
-	for _, k := range []string{"HERDR_BIN_PATH", "HERDR_PLUGIN_ID", "HERDR_PLUGIN_CONFIG_DIR", "HERDR_PLUGIN_STATE_DIR"} {
-		v := os.Getenv(k)
-		if v == "" {
-			return nil, fmt.Errorf("%s is not set; this command must be run by herdr as a plugin", k)
-		}
-		vars[k] = v
-	}
-	return &app{
-		herdr:     &herdr.Client{Bin: vars["HERDR_BIN_PATH"]},
-		pluginID:  vars["HERDR_PLUGIN_ID"],
-		configDir: vars["HERDR_PLUGIN_CONFIG_DIR"],
-		stateDir:  vars["HERDR_PLUGIN_STATE_DIR"],
+	a := &app{
+		pluginID:  cmp.Or(os.Getenv("HERDR_PLUGIN_ID"), defaultPluginID),
+		configDir: os.Getenv("HERDR_PLUGIN_CONFIG_DIR"),
+		stateDir:  os.Getenv("HERDR_PLUGIN_STATE_DIR"),
 		log:       log,
-	}, nil
+	}
+	if bin := os.Getenv("HERDR_BIN_PATH"); bin != "" {
+		a.herdr = &herdr.Client{Bin: bin}
+	}
+	if a.configDir == "" || a.stateDir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return nil, err
+		}
+		// Same layout herdr uses for plugin dirs, so one login serves both.
+		if a.configDir == "" {
+			base := cmp.Or(os.Getenv("XDG_CONFIG_HOME"), filepath.Join(home, ".config"))
+			a.configDir = filepath.Join(base, "herdr", "plugins", "config", a.pluginID)
+		}
+		if a.stateDir == "" {
+			base := cmp.Or(os.Getenv("XDG_STATE_HOME"), filepath.Join(home, ".local", "state"))
+			a.stateDir = filepath.Join(base, "herdr", "plugins", a.pluginID)
+		}
+	}
+	return a, nil
 }
 
 // runtime is everything needed to retitle workspaces with a loaded config.
@@ -134,6 +163,9 @@ func (a *app) oauth(cfg config.Config) *auth.OAuth {
 // client is attached, so msg is always written to the plugin log as well.
 func (a *app) notify(ctx context.Context, msg string) {
 	fmt.Fprintln(a.log, msg)
+	if a.herdr == nil {
+		return
+	}
 	if err := a.herdr.Notify(ctx, notifyTitle, msg); err != nil {
 		fmt.Fprintln(a.log, "notification failed:", err)
 	}
@@ -150,7 +182,8 @@ func (a *app) reportErr(ctx context.Context, err error) error {
 }
 
 func userMessage(err error) string {
-	const setupHint = " Run \"Linear: setup / login\"."
+	// The desktop mod matches "herdr-linear-title setup" to offer setup.
+	const setupHint = " Run setup (\"Linear: setup / login\" in herdr, or herdr-linear-title setup)."
 	switch {
 	case errors.Is(err, config.ErrNotConfigured):
 		return "Not configured." + setupHint
