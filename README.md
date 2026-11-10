@@ -130,11 +130,19 @@ nix develop --command make install-app
 ```
 
 This installs the binary to `~/.local/bin/herdr-linear-title` and copies the
-mod into `~/.config/herdr-app/mods/linear-title`. herdr-app does not dock a
-symlinked mod folder, so rerun it after changing the mod. herdr-app docks a new mod
-into the shown layout the next time it starts, as a one-line strip at the
-bottom. The strip shows the last result. When the last result is a missing
-config or login, click it to run setup.
+mod into `~/.config/herdr-app/mods/linear-title`. Rerun it after changing the
+mod.
+
+herdr-app does not dock a new mod into the shipped `main` layout, so open the
+mod once as a small window:
+
+```sh
+herdr-app do mod.open --name linear-title
+```
+
+The window is kept: it reopens on every start and stays where you drag it.
+It shows the last result. When the last result is a missing config or
+login, click it to run setup. Closing the window stops the mod.
 
 The app shares `config.toml` and the OAuth token with the TUI plugin, so one
 setup serves both. Without the TUI plugin, run setup once from a terminal:
@@ -165,8 +173,8 @@ Limits:
 
 - Spaces on other machines are skipped. The mod runs the binary on this
   computer only.
-- The mod runs only while its strip is in the shown layout. Herdr delivers
-  commands only to a shown copy.
+- The mod runs only while its window is open. Running `mod.open` again
+  closes it.
 
 ## Troubleshooting
 

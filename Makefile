@@ -31,9 +31,9 @@ fmt:
 link: build
 	herdr plugin link "$(CURDIR)"
 
-# Installs the binary and copies the mod into the Herdr desktop app. A
-# symlinked mod folder is never docked at startup, so it is copied; rerun
-# after editing the mod.
+# Installs the binary and copies the mod into the Herdr desktop app; rerun
+# after editing the mod. Open it once with `herdr-app do mod.open --name
+# linear-title` (see README).
 APP_MOD := $(HOME)/.config/herdr-app/mods/linear-title
 install-app: build
 	mkdir -p $(HOME)/.local/bin
