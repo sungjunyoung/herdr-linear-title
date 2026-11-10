@@ -133,16 +133,30 @@ This installs the binary to `~/.local/bin/herdr-linear-title` and copies the
 mod into `~/.config/herdr-app/mods/linear-title`. Rerun it after changing the
 mod.
 
-herdr-app does not dock a new mod into the shipped `main` layout, so open the
-mod once as a small window:
+herdr-app does not dock a new mod into the shipped `main` layout. To show it
+in the footer, clone `main` (this switches to the clone):
 
 ```sh
-herdr-app do mod.open --name linear-title
+herdr-app do layout.clone '{"name":"main","as":"linear"}'
 ```
 
-The window is kept: it reopens on every start and stays where you drag it.
-It shows the last result. When the last result is a missing config or
-login, click it to run setup. Closing the window stops the mod.
+Then in `~/.config/herdr-app/layouts/linear.json` replace the `status` block
+with a row that holds it and the mod:
+
+```json
+{ "id": "footer", "type": "row", "size": { "px": 28 }, "resizable": false,
+  "children": [
+    { "id": "status", "type": "block", "content": { "mod": "workspace-status" } },
+    { "id": "linear-title", "type": "block", "size": { "px": 420 },
+      "content": { "mod": "linear-title" } } ] }
+```
+
+A cloned layout no longer gets Herdr's updates to `main`. To stay on `main`,
+open the mod as a small kept window instead, which floats over the layout:
+`herdr-app do mod.open --name linear-title`.
+
+The footer shows the last result. When the last result is a missing config
+or login, click it to run setup.
 
 The app shares `config.toml` and the OAuth token with the TUI plugin, so one
 setup serves both. Without the TUI plugin, run setup once from a terminal:
@@ -173,8 +187,8 @@ Limits:
 
 - Spaces on other machines are skipped. The mod runs the binary on this
   computer only.
-- The mod runs only while its window is open. Running `mod.open` again
-  closes it.
+- The mod runs only while the shown layout holds it (the `linear` footer or
+  the kept window).
 
 ## Troubleshooting
 
