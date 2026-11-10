@@ -50,6 +50,7 @@
             gotools
             golangci-lint
             gnumake
+            nodejs
           ];
         };
       });

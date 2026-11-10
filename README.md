@@ -120,6 +120,53 @@ more of the title.
 With saved SSH machines, the plugin runs on the machine whose herdr server
 emits the event, so install and set it up on that machine.
 
+## Herdr desktop app
+
+The same titles work in the Herdr desktop app (`herdr-app`) through a mod in
+`herdr-app/mods/linear-title`. From a checkout of this repository:
+
+```sh
+nix develop --command make install-app
+```
+
+This installs the binary to `~/.local/bin/herdr-linear-title` and links the
+mod into `~/.config/herdr-app/mods/linear-title`. herdr-app docks a new mod
+into the shown layout the next time it starts, as a one-line strip at the
+bottom. The strip shows the last result. When the last result is a missing
+config or login, click it to run setup.
+
+The app shares `config.toml` and the OAuth token with the TUI plugin, so one
+setup serves both. Without the TUI plugin, run setup once from a terminal:
+
+```sh
+herdr-linear-title setup
+```
+
+The mod renames a space when its branch has an issue reference and the space
+has no name yet, or still has the name the mod gave it. A branch switch
+retitles it once herdr-app notices the new branch, which can take half a
+minute. A name you set yourself is kept until you refresh.
+
+Commands, bound in `~/.config/herdr-app/keys.json`:
+
+```json
+{ "global": { "cmd-alt-l": "linear-title.refresh" } }
+```
+
+| Command | Effect |
+| --- | --- |
+| `linear-title.refresh` | Retitle the focused space, overwriting its name |
+| `linear-title.refresh-all` | Retitle every space on this computer, retrying failures |
+| `linear-title.setup` | Open setup in a new tab |
+| `linear-title.logout` | Revoke and delete the OAuth token |
+
+Limits:
+
+- Spaces on other machines are skipped. The mod runs the binary on this
+  computer only.
+- The mod runs only while its strip is in the shown layout. Herdr delivers
+  commands only to a shown copy.
+
 ## Troubleshooting
 
 ```sh
