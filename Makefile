@@ -31,13 +31,16 @@ fmt:
 link: build
 	herdr plugin link "$(CURDIR)"
 
-# Installs the binary and links the mod into the Herdr desktop app, which
-# reloads mods by itself.
+# Installs the binary and copies the mod into the Herdr desktop app. A
+# symlinked mod folder is never docked at startup, so it is copied; rerun
+# after editing the mod.
 APP_MOD := $(HOME)/.config/herdr-app/mods/linear-title
 install-app: build
 	mkdir -p $(HOME)/.local/bin
 	install -m 0755 $(BIN) $(HOME)/.local/bin/herdr-linear-title
-	ln -sfn "$(CURDIR)/herdr-app/mods/linear-title" "$(APP_MOD)"
+	if [ -L "$(APP_MOD)" ]; then rm "$(APP_MOD)"; fi
+	mkdir -p "$(APP_MOD)"
+	cp herdr-app/mods/linear-title/main.js herdr-app/mods/linear-title/mod.json herdr-app/mods/linear-title/policy.js "$(APP_MOD)/"
 
 clean:
 	rm -rf bin result

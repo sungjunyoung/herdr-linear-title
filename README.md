@@ -129,8 +129,9 @@ The same titles work in the Herdr desktop app (`herdr-app`) through a mod in
 nix develop --command make install-app
 ```
 
-This installs the binary to `~/.local/bin/herdr-linear-title` and links the
-mod into `~/.config/herdr-app/mods/linear-title`. herdr-app docks a new mod
+This installs the binary to `~/.local/bin/herdr-linear-title` and copies the
+mod into `~/.config/herdr-app/mods/linear-title`. herdr-app does not dock a
+symlinked mod folder, so rerun it after changing the mod. herdr-app docks a new mod
 into the shown layout the next time it starts, as a one-line strip at the
 bottom. The strip shows the last result. When the last result is a missing
 config or login, click it to run setup.
