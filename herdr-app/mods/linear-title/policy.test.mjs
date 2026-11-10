@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AUTO, FORCE, due, decide, afterResolve, parseResolve, needsSetup } from "./policy.js";
+import { AUTO, FORCE, due, decide, afterResolve, parseResolve, withOwned } from "./policy.js";
 
 const space = (over = {}) => ({ id: "s1", name: "backoffice", named: false, machine: null, branch: "homeco-1-x", ...over });
 const ok = { status: "ok", identifier: "HOMECO-1", title: "Fix", label: "HOMECO-1 Fix" };
@@ -29,7 +29,8 @@ test("afterResolve", () => {
   assert.deepEqual(afterResolve(space({ named: true, name: "mine" }), ok, {}, AUTO), { kind: "skip", reason: "user_named" }, "renamed during resolve");
   assert.deepEqual(afterResolve(space({ named: true, name: "mine" }), ok, {}, FORCE), { kind: "rename", label: "HOMECO-1 Fix" });
   assert.deepEqual(afterResolve(space(), { status: "no_ref" }, {}, AUTO), { kind: "skip", reason: "no_ref" });
-  assert.deepEqual(afterResolve(space(), { status: "error", message: "boom" }, {}, AUTO), { kind: "error", message: "boom" });
+  assert.deepEqual(afterResolve(space(), { status: "error", message: "boom" }, {}, AUTO), { kind: "error", message: "boom", setup: false });
+  assert.deepEqual(afterResolve(space(), { status: "error", message: "m", needs_setup: true }, {}, AUTO), { kind: "error", message: "m", setup: true });
 });
 
 test("parseResolve reads stdout whatever the exit code", () => {
@@ -39,7 +40,6 @@ test("parseResolve reads stdout whatever the exit code", () => {
   assert.deepEqual(parseResolve({ code: 2, stdout: "", stderr: "" }), { status: "error", message: "resolve exited with code 2." });
 });
 
-test("needsSetup matches the Go setup hint", () => {
-  assert.equal(needsSetup('Not configured. Run setup ("Linear: setup / login" in herdr, or herdr-linear-title setup).'), true);
-  assert.equal(needsSetup("HOMECO-1: issue not found"), false);
+test("withOwned prunes closed spaces", () => {
+  assert.deepEqual(withOwned({ gone: "x", s1: "old" }, new Set(["s1", "s2"]), "s2", "new"), { s1: "old", s2: "new" });
 });

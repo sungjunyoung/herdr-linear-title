@@ -5,7 +5,7 @@
 import { View, div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { exec, focused, home, nextCommand, notify, run, setShared, shared, spaces, theme } from "herdr";
-import { AUTO, FORCE, afterResolve, decide, due, needsSetup, parseResolve } from "./policy.js";
+import { AUTO, FORCE, afterResolve, decide, due, parseResolve, withOwned } from "./policy.js";
 
 const OWNED = "linear-title.owned";
 const TITLE = "Linear Title";
@@ -81,13 +81,13 @@ export default class LinearTitle extends View {
   own(id, label) {
     const owned = this.owned();
     if (owned[id] === label) return;
-    setShared(OWNED, { ...owned, [id]: label });
+    setShared(OWNED, withOwned(owned, new Set(spaces().map((s) => s.id)), id, label));
   }
 
   // Auto runs report errors once per message; commands always answer.
   show(out, explicit) {
     if (out.kind === "error") {
-      this.status = { text: `Linear: ${out.message}`, error: true, setup: needsSetup(out.message) };
+      this.status = { text: `Linear: ${out.message}`, error: true, setup: out.setup };
       if (explicit || !this.notified.has(out.message)) {
         this.notified.add(out.message);
         notify({

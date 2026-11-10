@@ -18,6 +18,7 @@ type resolution struct {
 	Title      string `json:"title,omitempty"`
 	Label      string `json:"label,omitempty"`
 	Message    string `json:"message,omitempty"`
+	NeedsSetup bool   `json:"needs_setup,omitempty"`
 }
 
 // resolve prints the label for branchName without touching herdr. It exits
@@ -28,7 +29,7 @@ func (a *app) resolve(ctx context.Context, out io.Writer, branchName string) err
 	if err == nil {
 		res = resolveBranch(ctx, rt.retitler.Matcher, rt.cfg.Title, rt.lookup, branchName)
 	} else {
-		res.Message = userMessage(err)
+		res.Message, res.NeedsSetup = userMessage(err), needsSetup(err)
 	}
 	if err := json.NewEncoder(out).Encode(res); err != nil {
 		return err
@@ -46,7 +47,7 @@ func resolveBranch(ctx context.Context, m *branch.Matcher, format func(identifie
 	}
 	issue, err := lookup(ctx, ref)
 	if err != nil {
-		return resolution{Status: "error", Message: userMessage(err)}
+		return resolution{Status: "error", Message: userMessage(err), NeedsSetup: needsSetup(err)}
 	}
 	return resolution{
 		Status:     "ok",

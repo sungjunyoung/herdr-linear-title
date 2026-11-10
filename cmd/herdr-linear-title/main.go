@@ -181,8 +181,12 @@ func (a *app) reportErr(ctx context.Context, err error) error {
 	return err
 }
 
+// needsSetup reports whether err is fixed by running setup again.
+func needsSetup(err error) bool {
+	return errors.Is(err, config.ErrNotConfigured) || errors.Is(err, auth.ErrNotLoggedIn) || errors.Is(err, linear.ErrUnauthorized)
+}
+
 func userMessage(err error) string {
-	// The desktop mod matches "herdr-linear-title setup" to offer setup.
 	const setupHint = " Run setup (\"Linear: setup / login\" in herdr, or herdr-linear-title setup)."
 	switch {
 	case errors.Is(err, config.ErrNotConfigured):

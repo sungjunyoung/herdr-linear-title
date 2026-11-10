@@ -17,6 +17,9 @@ func TestResolveBranch(t *testing.T) {
 	}
 	cfg := config.Config{TitleFormat: config.DefaultTitleFormat}
 	lookup := func(_ context.Context, ref branch.IssueRef) (linear.Issue, error) {
+		if ref.Number == 401 {
+			return linear.Issue{}, linear.ErrUnauthorized
+		}
 		if ref.Number == 404 {
 			return linear.Issue{}, fmt.Errorf("%s: %w", ref.Identifier(), linear.ErrNotFound)
 		}
@@ -29,6 +32,7 @@ func TestResolveBranch(t *testing.T) {
 	}{
 		{"sungjunyoung/homeco-2290-login", resolution{Status: "ok", Identifier: "HOMECO-2290", Title: "Fix login", Label: "HOMECO-2290 Fix login"}},
 		{"main", resolution{Status: "no_ref"}},
+		{"homeco-401", resolution{Status: "error", Message: userMessage(linear.ErrUnauthorized), NeedsSetup: true}},
 		{"homeco-404", resolution{Status: "error", Message: "HOMECO-404: issue not found"}},
 	}
 	for _, tt := range tests {

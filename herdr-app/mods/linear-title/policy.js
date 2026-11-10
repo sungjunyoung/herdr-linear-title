@@ -22,7 +22,7 @@ export function decide(space, owned, mode) {
 // space is re-read after the resolve, so a rename the user made meanwhile wins.
 export function afterResolve(space, res, owned, mode) {
   if (res.status === "no_ref") return { kind: "skip", reason: "no_ref" };
-  if (res.status !== "ok") return { kind: "error", message: res.message || "Linear lookup failed." };
+  if (res.status !== "ok") return { kind: "error", message: res.message || "Linear lookup failed.", setup: res.needs_setup === true };
   const d = decide(space, owned, mode);
   if (d.kind === "skip") return d;
   if (space.named && space.name === res.label) return { kind: "unchanged", label: res.label };
@@ -40,7 +40,9 @@ export function parseResolve({ code, stdout, stderr }) {
   return { status: "error", message: why || `resolve exited with code ${code}.` };
 }
 
-// The Go side appends this hint to config and auth errors.
-export function needsSetup(message) {
-  return message.includes("herdr-linear-title setup");
+// Drops entries for spaces that no longer exist, then records label for id.
+export function withOwned(owned, liveIds, id, label) {
+  const next = Object.fromEntries(Object.entries(owned).filter(([k]) => liveIds.has(k)));
+  next[id] = label;
+  return next;
 }
