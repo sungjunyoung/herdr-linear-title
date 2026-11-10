@@ -4,7 +4,7 @@
 BIN := bin/herdr-linear-title
 NIX := nix --extra-experimental-features 'nix-command flakes'
 
-.PHONY: build test lint fmt link clean
+.PHONY: build test lint fmt link install-app clean
 
 # Builds with nix and copies the binary into ./bin.
 #
@@ -18,6 +18,7 @@ build:
 
 test:
 	go test -race ./...
+	node --test herdr-app/mods/linear-title/policy.test.mjs
 
 lint:
 	golangci-lint run ./...
@@ -29,6 +30,17 @@ fmt:
 # does not run [[build]], so build first.
 link: build
 	herdr plugin link "$(CURDIR)"
+
+# Installs the binary and copies the mod into the Herdr desktop app; rerun
+# after editing the mod. Open it once with `herdr-app do mod.open --name
+# linear-title` (see README).
+APP_MOD := $(HOME)/.config/herdr-app/mods/linear-title
+install-app: build
+	mkdir -p $(HOME)/.local/bin
+	install -m 0755 $(BIN) $(HOME)/.local/bin/herdr-linear-title
+	if [ -L "$(APP_MOD)" ]; then rm "$(APP_MOD)"; fi
+	mkdir -p "$(APP_MOD)"
+	cp herdr-app/mods/linear-title/main.js herdr-app/mods/linear-title/mod.json herdr-app/mods/linear-title/policy.js "$(APP_MOD)/"
 
 clean:
 	rm -rf bin result

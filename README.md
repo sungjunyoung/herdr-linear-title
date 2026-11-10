@@ -120,6 +120,76 @@ more of the title.
 With saved SSH machines, the plugin runs on the machine whose herdr server
 emits the event, so install and set it up on that machine.
 
+## Herdr desktop app
+
+The same titles work in the Herdr desktop app (`herdr-app`) through a mod in
+`herdr-app/mods/linear-title`. From a checkout of this repository:
+
+```sh
+nix develop --command make install-app
+```
+
+This installs the binary to `~/.local/bin/herdr-linear-title` and copies the
+mod into `~/.config/herdr-app/mods/linear-title`. Rerun it after changing the
+mod.
+
+herdr-app does not dock a new mod into the shipped `main` layout. To show it
+in the footer, clone `main` (this switches to the clone):
+
+```sh
+herdr-app do layout.clone '{"name":"main","as":"linear"}'
+```
+
+Then in `~/.config/herdr-app/layouts/linear.json` replace the `status` block
+with a row that holds it and the mod:
+
+```json
+{ "id": "footer", "type": "row", "size": { "px": 28 }, "resizable": false,
+  "children": [
+    { "id": "status", "type": "block", "content": { "mod": "workspace-status" } },
+    { "id": "linear-title", "type": "block", "size": { "px": 420 },
+      "content": { "mod": "linear-title" } } ] }
+```
+
+A cloned layout no longer gets Herdr's updates to `main`. To stay on `main`,
+open the mod as a small kept window instead, which floats over the layout:
+`herdr-app do mod.open --name linear-title`.
+
+The footer shows the last result. When the last result is a missing config
+or login, click it to run setup.
+
+The app shares `config.toml` and the OAuth token with the TUI plugin, so one
+setup serves both. Without the TUI plugin, run setup once from a terminal:
+
+```sh
+herdr-linear-title setup
+```
+
+The mod renames a space when its branch has an issue reference and the space
+has no name yet, or still has the name the mod gave it. A branch switch
+retitles it once herdr-app notices the new branch, which can take half a
+minute. A name you set yourself is kept until you refresh.
+
+Commands, bound in `~/.config/herdr-app/keys.json`:
+
+```json
+{ "global": { "cmd-alt-l": "linear-title.refresh" } }
+```
+
+| Command | Effect |
+| --- | --- |
+| `linear-title.refresh` | Retitle the focused space, overwriting its name |
+| `linear-title.refresh-all` | Retitle every space on this computer, retrying failures |
+| `linear-title.setup` | Open setup in a new tab |
+| `linear-title.logout` | Revoke and delete the OAuth token |
+
+Limits:
+
+- Spaces on other machines are skipped. The mod runs the binary on this
+  computer only.
+- The mod runs only while the shown layout holds it (the `linear` footer or
+  the kept window).
+
 ## Troubleshooting
 
 ```sh
