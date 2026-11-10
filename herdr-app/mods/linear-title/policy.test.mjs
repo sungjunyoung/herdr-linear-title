@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AUTO, FORCE, due, decide, afterResolve, parseResolve, withOwned } from "./policy.js";
+import { AUTO, FORCE, due, decide, afterResolve, footerText, parseResolve, withOwned } from "./policy.js";
 
 const space = (over = {}) => ({ id: "s1", name: "backoffice", named: false, machine: null, branch: "homeco-1-x", ...over });
 const ok = { status: "ok", identifier: "HOMECO-1", title: "Fix", label: "HOMECO-1 Fix" };
@@ -42,4 +42,14 @@ test("parseResolve reads stdout whatever the exit code", () => {
 
 test("withOwned prunes closed spaces", () => {
   assert.deepEqual(withOwned({ gone: "x", s1: "old" }, new Set(["s1", "s2"]), "s2", "new"), { s1: "old", s2: "new" });
+});
+
+test("footerText follows the active space", () => {
+  const idle = { text: "", error: false, setup: false };
+  const owned = { s1: "HOMECO-1 Fix" };
+  assert.equal(footerText(idle, space({ named: true, name: "HOMECO-1 Fix" }), owned), "HOMECO-1 Fix");
+  assert.equal(footerText(idle, space({ id: "s2" }), owned), "Linear: no issue", "another space, another issue");
+  assert.equal(footerText(idle, space({ named: true, name: "mine" }), owned), "Linear: no issue", "renamed by the user");
+  assert.equal(footerText(idle, undefined, owned), "Linear: no issue");
+  assert.equal(footerText({ text: "Linear: boom", error: true, setup: false }, space({ named: true, name: "HOMECO-1 Fix" }), owned), "Linear: boom");
 });

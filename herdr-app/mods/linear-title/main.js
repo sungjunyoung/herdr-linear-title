@@ -5,10 +5,15 @@
 import { View, div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { exec, focused, home, machines, nextCommand, notify, run, setShared, shared, spaces, theme } from "herdr";
-import { AUTO, FORCE, afterResolve, decide, due, parseResolve, withOwned } from "./policy.js";
+import { AUTO, FORCE, afterResolve, decide, due, footerText, parseResolve, withOwned } from "./policy.js";
 
 const OWNED = "linear-title.owned";
 const TITLE = "Linear Title";
+// The footer block hugs its text: the layout node with this id is resized to
+// the measured text plus padding, up to MAX_WIDTH, past which the text truncates.
+const BLOCK = "linear-title";
+const PAD = 14;
+const MAX_WIDTH = 420;
 const SKIPPED = {
   no_branch: "This space has no git branch.",
 };
@@ -19,7 +24,7 @@ export default class LinearTitle extends View {
     this.jobs = new Map();
     this.notified = new Set();
     this.busy = false;
-    this.status = { text: "Linear: idle", error: false, setup: false };
+    this.status = { text: "", error: false, setup: false };
     // spaces() changes re-render, but render must stay free of side effects;
     // a cheap in-memory scan each second finds new spaces and branch switches.
     cx.timer.every(1000, (cx) => this.reconcile(cx));
@@ -113,8 +118,8 @@ export default class LinearTitle extends View {
       }
       return;
     }
-    if (out.kind === "rename") this.status = { text: `Linear: renamed to ${out.label}`, error: false, setup: false };
-    if (out.kind === "unchanged") this.status = { text: `Linear: already ${out.label}`, error: false, setup: false };
+    // A success clears the last error; the footer then shows the active space's issue.
+    if (out.kind === "rename" || out.kind === "unchanged") this.status = { text: "", error: false, setup: false };
     if (!explicit) return;
     const body = {
       rename: `Renamed to ${out.label}`,
@@ -170,20 +175,41 @@ export default class LinearTitle extends View {
     notify({ title: TITLE, body, level: r.code === 0 ? "success" : "error" });
   }
 
+  fit(width) {
+    const px = Math.ceil(width) + PAD * 2 + 1;
+    if (px === this.width) return;
+    this.width = px;
+    try {
+      run("layout.resize", { id: BLOCK, px });
+    } catch {
+      // No such node: the mod runs as a kept window, which has its own size.
+    }
+  }
+
   render() {
     const t = theme();
     const s = this.status;
+    const text = footerText(s, spaces().find((x) => x.active), this.owned());
     return h_flex()
       .id("linear-title")
       .size_full()
-      .px(14)
+      .px(PAD)
       .items_center()
+      .justify_end()
       .bg(t.chrome)
       .border_t(1)
       .border_color(t.border)
       .text_size(11.8)
       .text_color(s.error ? t.blocked : t.dim)
       .when(s.setup, (el) => el.cursor_pointer().hover((st) => st.text_color(t.foreground)).on_click(() => this.setup()))
-      .child(div().truncate().child(s.setup ? `${s.text} Click to set up.` : s.text));
+      .child(
+        div()
+          .id("linear-title-text")
+          .flex_none()
+          .max_w(MAX_WIDTH - PAD * 2)
+          .truncate()
+          .on_size_change((size) => this.fit(size.width))
+          .child(s.setup ? `${text} Click to set up.` : text),
+      );
   }
 }

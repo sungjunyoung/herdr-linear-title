@@ -46,3 +46,12 @@ export function withOwned(owned, liveIds, id, label) {
   next[id] = label;
   return next;
 }
+
+// The footer follows the shown space: its issue while the space still carries
+// the label this mod wrote, else nothing to show. The last error wins, so a
+// missing setup stays clickable.
+export function footerText(status, active, owned) {
+  if (status.error) return status.text;
+  const label = active && owned[active.id];
+  return label && active.name === label ? label : "Linear: no issue";
+}

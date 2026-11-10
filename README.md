@@ -155,8 +155,10 @@ A cloned layout no longer gets Herdr's updates to `main`. To stay on `main`,
 open the mod as a small kept window instead, which floats over the layout:
 `herdr-app do mod.open --name linear-title`.
 
-The footer shows the last result. When the last result is a missing config
-or login, click it to run setup.
+The footer shows the issue of the shown space and follows it when you switch
+spaces. Use the footer or the kept window, not both. When the last result is
+a missing config or login, the footer shows that instead: click it to run
+setup.
 
 The app shares `config.toml` and the OAuth token with the TUI plugin, so one
 setup serves both. Without the TUI plugin, run setup once from a terminal:
