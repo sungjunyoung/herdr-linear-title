@@ -4,13 +4,12 @@
 
 import { View, div } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { exec, focused, home, nextCommand, notify, run, setShared, shared, spaces, theme } from "herdr";
+import { exec, focused, home, machines, nextCommand, notify, run, setShared, shared, spaces, theme } from "herdr";
 import { AUTO, FORCE, afterResolve, decide, due, parseResolve, withOwned } from "./policy.js";
 
 const OWNED = "linear-title.owned";
 const TITLE = "Linear Title";
 const SKIPPED = {
-  remote: "Spaces on other machines are not supported.",
   no_branch: "This space has no git branch.",
 };
 
@@ -37,8 +36,16 @@ export default class LinearTitle extends View {
     return shared(OWNED) ?? {};
   }
 
+  // A machine whose layout is not ready cannot take a rename; its spaces wait
+  // without a job, so they are picked up once it connects.
+  reachable(space) {
+    return space.machine === null || machines().some((m) => m.name === space.machine && m.layout === "ready");
+  }
+
   dueSpaces(mode) {
-    return spaces().filter((s) => due(this.jobs.get(s.id), s.branch) && decide(s, this.owned(), mode).kind === "resolve");
+    return spaces().filter(
+      (s) => this.reachable(s) && due(this.jobs.get(s.id), s.branch) && decide(s, this.owned(), mode).kind === "resolve",
+    );
   }
 
   reconcile(cx) {
@@ -71,8 +78,15 @@ export default class LinearTitle extends View {
     }
     const now = spaces().find((s) => s.id === space.id);
     // A branch switch during the lookup leaves the job stale; the next scan redoes it.
-    const out = !now || now.branch !== job.branch ? { kind: "skip", reason: "moved" } : afterResolve(now, res, this.owned(), mode);
-    if (out.kind === "rename") run("space.rename", { id: space.id, name: out.label });
+    let out = !now || now.branch !== job.branch ? { kind: "skip", reason: "moved" } : afterResolve(now, res, this.owned(), mode);
+    if (out.kind === "rename") {
+      try {
+        run("space.rename", { id: space.id, name: out.label });
+      } catch (e) {
+        // Structural commands fail while the space's machine is unavailable.
+        out = { kind: "error", message: `Cannot rename the space (${e}).`, setup: false };
+      }
+    }
     if (out.kind === "rename" || out.kind === "unchanged") this.own(space.id, out.label);
     job.state = out.kind === "error" ? "failed" : "done";
     return out;

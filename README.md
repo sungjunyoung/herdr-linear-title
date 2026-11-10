@@ -179,14 +179,15 @@ Commands, bound in `~/.config/herdr-app/keys.json`:
 | Command | Effect |
 | --- | --- |
 | `linear-title.refresh` | Retitle the focused space, overwriting its name |
-| `linear-title.refresh-all` | Retitle every space on this computer, retrying failures |
+| `linear-title.refresh-all` | Retitle every space, retrying failures |
 | `linear-title.setup` | Open setup in a new tab |
 | `linear-title.logout` | Revoke and delete the OAuth token |
 
 Limits:
 
-- Spaces on other machines are skipped. The mod runs the binary on this
-  computer only.
+- Spaces on other machines (`hc machine add`) are titled too, but the
+  lookup runs on the computer with the app: install and set up the binary
+  there. The other machine needs nothing.
 - The mod runs only while the shown layout holds it (the `linear` footer or
   the kept window).
 

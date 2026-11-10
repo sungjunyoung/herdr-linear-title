@@ -11,9 +11,9 @@ export function due(job, branch) {
 }
 
 // owned maps space id to the label this mod last wrote. Auto mode keeps any
-// other name, because someone chose it.
+// other name, because someone chose it. Spaces on other machines count too:
+// the lookup needs only the branch name, so it runs on this computer.
 export function decide(space, owned, mode) {
-  if (space.machine !== null) return { kind: "skip", reason: "remote" };
   if (!space.branch) return { kind: "skip", reason: "no_branch" };
   if (mode === FORCE || !space.named || space.name === owned[space.id]) return { kind: "resolve" };
   return { kind: "skip", reason: "user_named" };

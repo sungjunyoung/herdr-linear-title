@@ -16,7 +16,7 @@ test("due: new, branch switch and refresh rules", () => {
 
 test("decide", () => {
   assert.deepEqual(decide(space(), {}, AUTO), { kind: "resolve" });
-  assert.deepEqual(decide(space({ machine: "vps" }), {}, FORCE), { kind: "skip", reason: "remote" });
+  assert.deepEqual(decide(space({ machine: "vps" }), {}, AUTO), { kind: "resolve" }, "remote spaces resolve here");
   assert.deepEqual(decide(space({ branch: null }), {}, FORCE), { kind: "skip", reason: "no_branch" });
   assert.deepEqual(decide(space({ named: true, name: "mine" }), {}, AUTO), { kind: "skip", reason: "user_named" });
   assert.deepEqual(decide(space({ named: true, name: "HOMECO-1 Old" }), { s1: "HOMECO-1 Old" }, AUTO), { kind: "resolve" });
